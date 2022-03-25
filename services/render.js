@@ -12,15 +12,15 @@ const logger = require('./logger')
 
 
 
-const render = async (url, customActions={}, nextPage) => {
+const render = async (page, customActions={}, nextPage) => {
 
-    puppeteer.use(StealthPlugin())
+    // puppeteer.use(StealthPlugin())
 
-    const browser = await puppeteer.launch({headless:false});
+    // const browser = await puppeteer.launch({headless:false});
     try {
        
-
-        const page = await browser.newPage();
+        logger.info('Rendering')
+        // const page = await browser.newPage();
     
         // await page.setRequestInterception(true);
     
@@ -33,29 +33,21 @@ const render = async (url, customActions={}, nextPage) => {
         //     logger.info(`[ * ] - Response: ${response.status()} ${response.url()}` )
         // });
     
-        browser.on('disconnected', async () => {
-            try {
+        // browser.on('disconnected', async () => {
+        //     try {
     
-                if(browser) {
-                    await browser.close()
-                    logger.info('Browser is closed and disconnected')
-                } 
-            }
-            catch(err) {
-                logger.error("Failed to close the browser")
-            }
+        //         if(browser) {
+        //             await browser.close()
+        //             logger.info('Browser is closed and disconnected')
+        //         } 
+        //     }
+        //     catch(err) {
+        //         logger.error("Failed to close the browser")
+        //     }
     
-        })
+        // })
     
-        await page.goto(url, {waitUntil:'networkidle2'}).then(
-            () => {logger.info(`Connected to url ${url}`)}
-        ). catch( (err) => {
-            logger.error(`Failed to connect due to: ${err}`)
-        });
-    
-        await page.waitForNavigation({
-            waitUntil: 'networkidle0',
-          });
+
 
         await page.setViewport({
             width: 1920,
@@ -66,11 +58,11 @@ const render = async (url, customActions={}, nextPage) => {
     
         await autoScroll(page);
     
-        await page.screenshot({path:'./test.png', fullPage: true}).then(
-            () => { logger.info('Webpage screen capture success')}
-        ).catch( (err) => {
-            logger.error(`Failed to capture screen due to: ${err}`)
-        });
+        // await page.screenshot({path:'./test.png', fullPage: true}).then(
+        //     () => { logger.info('Webpage screen capture success')}
+        // ).catch( (err) => {
+        //     logger.error(`Failed to capture screen due to: ${err}`)
+        // });
 
 
         const html = await page.content().then( (res) => {
@@ -81,7 +73,7 @@ const render = async (url, customActions={}, nextPage) => {
         });
     
 
-        const hasNext = await page.$$(nextPage)
+        const hasNext = await page.$(nextPage)
         // const { nano } = await connector().then( (res) => {
         //     logger.info('Establish database connection')
         //     return res
@@ -93,7 +85,7 @@ const render = async (url, customActions={}, nextPage) => {
 
         // logger.info(util.inspect(nano.db, {showHidden: false, depth: null, colors: true}))
 
-        return {html, hasNext: !!hasNext}
+        return {html:html, hasNext: !!hasNext}
 
     //     const uuid = utils.urlto_uuid(url);
     //     const id = `${utils.today()}@${uuid}`;
@@ -124,17 +116,85 @@ const render = async (url, customActions={}, nextPage) => {
         logger.error(er)
     }
     
+    // finally {
+    //     browser.close()
+    // }
+
+}
+
+const execute = async (url, customActions={}, {nextPageElement, maxStep}) => {
+
+
+    puppeteer.use(StealthPlugin())
+
+    const browser = await puppeteer.launch({headless:false});
+
+    const page = await browser.newPage();
+        
+    browser.on('disconnected', async () => {
+        try {
+
+            if(browser) {
+                await browser.close()
+                logger.info('Browser is closed and disconnected')
+            } 
+        }
+        catch(err) {
+            logger.error("Failed to close the browser")
+        }
+
+    })
+
+    await page.goto(url, {waitUntil:'networkidle2'}).then(
+        () => {logger.info(`Connected to url ${url}`)}
+    ). catch( (err) => {
+        logger.error(`Failed to connect due to: ${err}`)
+    });
+
+    // await page.waitForNavigation({
+    //     waitUntil: 'networkidle0',
+    //   });
+
+    try{
+        let currentPage = 1
+        let htmlPages = []
+        do {
+            logger.info(`current Page: ${currentPage}`)
+            let {html, hasNext} = await render(page, customActions, nextPageElement)
+    
+            if(html) {
+                let htmlpage = { page: currentPage, html}
+                htmlPages.push(htmlpage)
+            }
+            
+            logger.info(`has next? ${hasNext}`)
+            if(hasNext){
+                currentPage++; 
+                const [response] = await Promise.all([
+                    page.waitForNavigation(),
+                    page.click(nextPageElement)
+                ])
+                
+            }
+            else{
+                break;
+            }
+            logger.info("cur page", currentPage)
+        }
+        while(currentPage <= maxStep);
+
+        return htmlPages
+    }
+    catch(er){
+        logger.error(er)
+    }
+    
     finally {
         browser.close()
     }
 
-}
 
-const execute = (url, customActions={}, {nextPageElement, maxPage}) => {
 
-    currentPage = 1
-
-    
 
 }
 const preRenderServer = {
@@ -142,6 +202,20 @@ const preRenderServer = {
     execute: execute
 }
 
+const tester = async () => {
+    url = 'https://quotes.toscrape.com/page/9/'
+    let nextPage = {
+        nextPageElement:'nav li.next a',
+        maxStep: 2
+    }
+    customActions = {}
+
+    const results = await preRenderServer.execute(url, customActions, nextPage)
+
+    console.log(results)
+}
+
+tester()
 // function today(){
 //    let date = new Date()
 //    return date.toISOString().split('T')[0]

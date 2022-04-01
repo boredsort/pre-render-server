@@ -1,4 +1,4 @@
-const autoScroll = async (page) => {
+const scrollDown = async (page) => {
     await page.evaluate(async () => {
         await new Promise((resolve, reject) => {
             var totalHeight = 0;
@@ -16,5 +16,29 @@ const autoScroll = async (page) => {
         });
     });
 }
+
+const scrollUp = async (page) => {
+    await page.evaluate(async () => {
+        await new Promise((resolve, reject) => {
+            var totalHeight = document.body.scrollHeight;
+            var distance = 100;
+            var timer = setInterval(() => {
+                window.scrollBy(0, -distance);
+                totalHeight -= distance;
+
+                if(totalHeight <= 0){
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, 200);
+        });
+    });
+}
+
+const autoScroll = {
+   scrollDown,
+   scrollUp
+}
+
 
 module.exports = autoScroll;

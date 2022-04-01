@@ -47,6 +47,13 @@ const customActionHandler = async (page, customActions) => {
                         break;
                     case actions.TYPE:
                         await page.type(action.element, action.value, {delay: 120})
+                            .then(() => {
+                                logger.info(`Type the value ${action.value} on element ${action.element}`)
+                            })
+                            .catch((err) => {
+                                logger.error(`Failed to type on element ${action.element} due to: ${err}`)
+                            })
+
                         break;
 
                     case actions.DECOMPOSE:

@@ -5,7 +5,7 @@ const express = require("express");
 const db = require("./services/connections/connect");
 const execute = require("./app");
 const utils = require("./utils/utils");
-const validator = require("./utils/validator");
+const { Validator, pageSchema} = require("./utils/validator");
 
 // for debuggin onlye
 const util = require("util");
@@ -24,30 +24,31 @@ app.post("/get", async (req, res) => {
 
 /* /run */
 app.post("/run", async (req, res) => {
-  /*
-        Require a URL;
-        Optional screen types
-        Could also receive customActions
-        ** should require a token to only allow the server to trigger the run;
 
-    */
+	let body = req.body
+	let { errors } = Validator.validate(body, pageSchema)
 
+  if (errors && errors.length > 0) {
+    return res.send(errors)
+  }
+  
   let url = req.body.url;
-  let action = req.body.action;
-  let page = req.body.page;
+  let action = req.body.actions;
+  let page = req.body.nextPage;
+  let altView = req.body.alternateViews
 
-  let result = await connectRender(url, action, page);
+  let result = await connectRender(url, action, page, altView);
 
   // result = await db.get('90e156a47e4576371159c291e2006e88')
 
   res.send(result);
 });
 
-const connectRender = async (url, action, page) => {
+const connectRender = async (url, action, page, altView) => {
   if (!url || url.length < 0) {
     throw new Error("No target URL to render");
   }
-  let result = await execute(url, action, page);
+  let result = await execute(url, action, page, altView);
   return result;
 };
 

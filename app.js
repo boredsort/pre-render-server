@@ -3,9 +3,9 @@ const nano = require("./services/connections/connect");
 const utils = require("./utils/utils");
 const logger = require("./services/logger");
 
-const execute = async (url, actions, page) => {
+const execute = async (url, actions, nextPage, altView) => {
   let htmlPages = await preRenderServer
-    .execute(url, actions, page)
+    .execute(url, actions, nextPage, altView)
     .then((result) => {
       logger.info("Successfully Rendered page(s)");
       return result;

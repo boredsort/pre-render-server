@@ -5,21 +5,40 @@ const pageSchema = {
     "id":"/page",
     "type": "object",
     "properties": {
-        "url": { "type": "string"} ,
+        "url": { "type": "string", "minLength": 6} ,
         "nextPage": {
             "type": "object",
             "properties": {
                 "nextPageElement": {"type": "string"},
                 "maxStep": {"type": "integer", "minimum": 1},
+                "persistActions": {"type": "boolean"},
+                "persistAltViews": {"type": "boolean"},
             },
             "required": ["nextPageElement"]
         },
         "alternateViews": {
             "type": "array",
             "items": {
-                "action": { 
-                    "$ref": "/action",
+                "type": "object",
+                "properties":{
+                    "viewName": {"type": "string"},
+                    "actions": {
+                        "type": "array",
+                        "items": {
+                            "action": { 
+                                "$ref": "/action",
+                            }
+                        }
+                    }
+    
                 }
+            }
+
+        },
+        "actions": {
+            "type": "array",
+            "items": {
+                "$ref": "/action"
             }
         }
     },

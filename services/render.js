@@ -17,34 +17,21 @@ const render = async (page, customActions = {}, nextPage, alternateViews) => {
       height: 1080,
     });
 
-    // await customActionsHandler(page, customActions)
-
-    // await autoScroll(page);
-
-    // // await page.screenshot({path:'./test.png', fullPage: true}).then(
-    // //     () => { logger.info('Webpage screen capture success')}
-    // // ).catch( (err) => {
-    // //     logger.error(`Failed to capture screen due to: ${err}`)
-    // // });
-
-    // const html = await page.content().then( (res) => {
-    //     logger.info('Html source exctraction success')
-    //     return res
-    // }).catch( (err) => {
-    //     logger.error(`Failed to extract HTML source due to: ${err}`)
-    // });
     let html = await executeActionsAndGetContent(page, customActions);
+    // this code works but does it simulationously,
     logger.info("alternateview: " + JSON.stringify(alternateViews));
-    let altViewsHtml = await Promise.all(
-      alternateViews.map(async (view) => {
-        let resultHtml = await executeActionsAndGetContent(page, view.action);
-        let result = {
-          view_name: view.name,
-          html: resultHtml,
-        };
-        return result;
-      })
-    );
+    // let altViewsHtml = await Promise.all(
+    //   alternateViews.map(async (view) => {
+    //     let resultHtml = await executeActionsAndGetContent(page, view.actions);
+    //     let result = {
+    //       view_name: view.viewName,
+    //       html: resultHtml,
+    //     };
+    //     return result;
+    //   })
+    // );
+
+    let altViewsHtml = await executeAlternateViews(page, alternateViews);
 
     const hasNext = await page.$(nextPage).catch((err) => {
       logger.info(`No next page element '${nextPage}'`);
@@ -54,6 +41,7 @@ const render = async (page, customActions = {}, nextPage, alternateViews) => {
     // logger.info(util.inspect(nano.db, {showHidden: false, depth: null, colors: true}))
     let results = {
       html: !!html ? html : "",
+      alternateViewsHTML: !!altViewsHtml ? altViewsHtml : [],
       hasNext: !!hasNext,
     };
 
@@ -66,17 +54,17 @@ const render = async (page, customActions = {}, nextPage, alternateViews) => {
 const execute = async (
   url,
   customActions = {},
-  nextPage = { nextPageElement: "", maxStep: 1 },
+  nextPage = { nextPageElement: "", maxStep: 1, persistActions: false, persistAltViews: false },
   alternateViews = []
 ) => {
-  logger.info(`Browser is closed and ${alternateViews}`);
+  logger.info(`Executing alternateviews ${alternateViews}`);
   puppeteer.use(StealthPlugin());
 
   const browser = await puppeteer.launch({ headless: false });
 
   const page = await browser.newPage();
 
-  let { nextPageElement, maxStep } = nextPage;
+  let { nextPageElement, maxStep, persistActions, persistAltViews } = nextPage;
 
   browser.on("disconnected", async () => {
     try {
@@ -106,7 +94,13 @@ const execute = async (
     let currentPage = 1;
     let htmlPages = [];
     do {
-      let { html, hasNext } = await render(
+
+      if ( currentPage > 1){
+        customActions = persistActions? customActions: {}
+        alternateViews = persistAltViews? alternateViews: []
+      }
+      
+      let { html, hasNext, alternateViewsHTML } = await render(
         page,
         customActions,
         nextPageElement,
@@ -121,7 +115,7 @@ const execute = async (
         });
 
       if (html) {
-        let htmlpage = { page: currentPage, html };
+        let htmlpage = { page: currentPage, html, alternateViewsHTML };
         htmlPages.push(htmlpage);
       }
 
@@ -154,7 +148,7 @@ const executeActionsAndGetContent = async (page, actions) => {
 
   await autoScroll.scrollDown(page);
 
-  await page.waitForTimeout(2000).then(async () => {
+  await page.waitForTimeout(1000).then(async () => {
     await autoScroll.scrollUp(page);
   });
 
@@ -181,6 +175,31 @@ const executeActionsAndGetContent = async (page, actions) => {
     });
 
   return html;
+};
+
+const executeAlternateViews = async (page, alternateViews) => {
+  try {
+    const altViewsHTML = [];
+    let index = 1;
+    for (const view of alternateViews) {
+      let resultHtml = await executeActionsAndGetContent(page, view.actions);
+      let result = {
+        view_name: view.viewName,
+        html: resultHtml,
+      };
+      altViewsHTML.push(result);
+  
+      if ( altViewsHTML.length == alternateViews.length) {
+        return Promise.resolve(altViewsHTML);
+      }
+      index++;
+    }
+
+  }
+  catch(err) {
+    return Promise.reject(err)
+  }
+
 };
 
 const preRenderServer = {

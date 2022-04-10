@@ -2,6 +2,7 @@
 module.exports = Object.freeze(
     {
         WAIT_FOR: 'wait_for',
+        CLEAR_TEXT: 'clear_text',
         CLICK: 'click',
         CLICK_NAVIGATE:  'click_navigate',
         HOVER: 'hover',

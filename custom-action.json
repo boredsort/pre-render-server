@@ -1,7 +1,0 @@
-{
-    "elkjop.no": {
-        "actions": [
-            {"type": "click", "element": "div.coi-banner__page-footer > button.coi-banner__accept", "delayBeforeAction": 3000, "delayAfterAction": 1500}
-        ]
-    }
-}

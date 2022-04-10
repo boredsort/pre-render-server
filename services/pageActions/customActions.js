@@ -53,7 +53,6 @@ const customActionHandler = async (page, customActions) => {
                             .catch((err) => {
                                 logger.error(`Failed to type on element ${action.element} due to: ${err}`)
                             })
-
                         break;
 
                     case actions.DECOMPOSE:
@@ -112,12 +111,20 @@ const customActionHandler = async (page, customActions) => {
                             await page.waitFor(action.delayAfterAction)
                         }
                         break;
-                    
-
                     // case actions.DELAY:
                     //     sleep(Number(action.value))
                     //     break;
-                
+                    case actions.CLEAR_TEXT:
+                        await Promise.all([
+                            await page.focus(selector),
+                            await page.keyboard.down('Control'),
+                            await page.keyboard.press('A'),
+                            await page.keyboard.up('Control'),
+                            await page.keyboard.press('Backspace')
+                        ]).then( () => {
+                            logger.info(`Cleared text on elem '${selector}'`)
+                        })
+                        break;
                 }        
 
                 await sleep(action.delayAfterAction)

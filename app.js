@@ -4,6 +4,12 @@ const utils = require("./utils/utils");
 const logger = require("./services/logger");
 
 const execute = async (url, actions, nextPage, altView) => {
+
+  const uuid = utils.urlto_uuid(url);
+  const id = `${utils.today()}@${uuid}`;
+
+  global.root_id = id
+  
   let htmlPages = await preRenderServer
     .execute(url, actions, nextPage, altView)
     .then((result) => {
@@ -11,8 +17,6 @@ const execute = async (url, actions, nextPage, altView) => {
       return result;
     });
 
-  const uuid = utils.urlto_uuid(url);
-  const id = `${utils.today()}@${uuid}`;
   const item = {
     _id: id,
     source_url: url,

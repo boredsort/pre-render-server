@@ -40,6 +40,9 @@ const pageSchema = {
             "items": {
                 "$ref": "/action"
             }
+        },
+        "override": {
+            "type": "boolean"
         }
     },
     "required": ["url"]

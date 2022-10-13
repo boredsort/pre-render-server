@@ -2,7 +2,7 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const express = require("express");
 
-const db = require("./services/connections/connect");
+// const db = require("./services/connections/connect");
 const execute = require("./app");
 const utils = require("./utils/utils");
 const { Validator, pageSchema} = require("./utils/validator");
